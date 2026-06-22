@@ -1,0 +1,12 @@
+build/
+*.user
+*.user.*
+CMakeLists.txt.user
+.vscode/
+.vs/
+*.o
+*.obj
+*.exe
+*.app
+*.dSYM/
+compile_commands.json

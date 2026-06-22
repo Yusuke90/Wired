@@ -26,6 +26,50 @@ MainWindow::MainWindow(QWidget *parent)
     // Wire address bar
     connect(m_addressBar, &QLineEdit::returnPressed,
             this, &MainWindow::onAddressEntered);
+
+    connect(m_backAction,&QAction::triggered,
+            m_webView,&QWebEngineView::back);
+
+    connect(m_forwardAction,&QAction::triggered,
+            m_webView,&QWebEngineView::forward);
+
+    connect(m_reloadAction,&QAction::triggered,
+            m_webView,&QWebEngineView::reload);
+
+    connect(m_webView,&QWebEngineView::loadProgress,
+            m_progressBar,&QProgressBar::setValue);
+
+    connect(
+        m_webView,
+        &QWebEngineView::loadProgress,
+        this,
+        [this](int progress)
+        {
+            m_progressLabel->setText(QString::number(progress) + "%");
+        }
+        );
+
+    connect(m_webView
+            ,&QWebEngineView::loadStarted,
+            this,
+            [this]()
+            {
+                statusBar()->showMessage("Loading..");
+            }
+            );
+
+    connect(
+        m_webView,
+        &QWebEngineView::loadFinished,
+        this,
+        [this](bool)
+        {
+            statusBar()->showMessage("Ready");
+        }
+        );
+
+    connect(m_webView,&QWebEngineView::titleChanged,
+            this,&QMainWindow::setWindowTitle);
 }
 
 void MainWindow::setupToolBar()
@@ -40,8 +84,8 @@ void MainWindow::setupToolBar()
 
     // No QWebEngineView yet (that's Module 3), so these can't do anything real.
     // Disabled rather than wired to a no-op, so the UI honestly reflects state.
-    m_backAction->setEnabled(false);
-    m_forwardAction->setEnabled(false);
+    m_backAction->setEnabled(true);
+    m_forwardAction->setEnabled(true);
 
     m_addressBar = new QLineEdit(this);
     m_addressBar->setPlaceholderText(tr("Search or enter address"));
