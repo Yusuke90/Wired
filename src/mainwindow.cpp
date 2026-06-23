@@ -9,6 +9,8 @@
 #include <QStyle>
 #include <QToolBar>
 #include <QStatusBar>
+#include <QShortcut>
+#include <QKeySequence>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -18,58 +20,93 @@ MainWindow::MainWindow(QWidget *parent)
     setupMenuBar();
     setupStatusBar();
 
-    // Module 3 — WebEngine view
-    m_webView = new QWebEngineView(this);
-    setCentralWidget(m_webView);
-    m_webView->setUrl(QUrl("https://www.google.com"));
+    // Module 4 — Tab widget replaces single web view
+    m_tabWidget = new QTabWidget(this);
+    m_tabWidget->setTabsClosable(true);
+    m_tabWidget->setMovable(true);
+    setCentralWidget(m_tabWidget);
+
+    // Wire tab close button
+    connect(m_tabWidget, &QTabWidget::tabCloseRequested,
+            this, &MainWindow::onTabCloseRequested);
 
     // Wire address bar
     connect(m_addressBar, &QLineEdit::returnPressed,
             this, &MainWindow::onAddressEntered);
 
-    connect(m_backAction,&QAction::triggered,
-            m_webView,&QWebEngineView::back);
+    // Ctrl+T shortcut
+    QShortcut *newTabShortcut = new QShortcut(QKeySequence::AddTab, this);
+    connect(newTabShortcut, &QShortcut::activated,
+            this, [this]() { addNewTab(); });
 
-    connect(m_forwardAction,&QAction::triggered,
-            m_webView,&QWebEngineView::forward);
+    // Open first tab at startup
+    addNewTab(QUrl("https://www.google.com"));
+}
 
-    connect(m_reloadAction,&QAction::triggered,
-            m_webView,&QWebEngineView::reload);
+void MainWindow::addNewTab(const QUrl &url)
+{
+    QWebEngineView *webView = new QWebEngineView(this);
+    webView->setUrl(url);
 
-    connect(m_webView,&QWebEngineView::loadProgress,
-            m_progressBar,&QProgressBar::setValue);
+    int index = m_tabWidget->addTab(webView, tr("New Tab"));
+    m_tabWidget->setCurrentIndex(index);
 
-    connect(
-        m_webView,
-        &QWebEngineView::loadProgress,
-        this,
-        [this](int progress)
-        {
-            m_progressLabel->setText(QString::number(progress) + "%");
-        }
-        );
+    // Update tab title when page title changes
+    connect(webView, &QWebEngineView::titleChanged,
+            this, [this, webView](const QString &title) {
+                int i = m_tabWidget->indexOf(webView);
+                if (i >= 0)
+                    m_tabWidget->setTabText(i, title.isEmpty() ? tr("New Tab") : title);
+                if (m_tabWidget->currentWidget() == webView)
+                    setWindowTitle(title);
+            });
 
-    connect(m_webView
-            ,&QWebEngineView::loadStarted,
-            this,
-            [this]()
-            {
-                statusBar()->showMessage("Loading..");
-            }
-            );
+    // Update address bar when URL changes
+    connect(webView, &QWebEngineView::urlChanged,
+            this, [this, webView](const QUrl &newUrl) {
+                if (m_tabWidget->currentWidget() == webView)
+                    m_addressBar->setText(newUrl.toString());
+            });
 
-    connect(
-        m_webView,
-        &QWebEngineView::loadFinished,
-        this,
-        [this](bool)
-        {
-            statusBar()->showMessage("Ready");
-        }
-        );
+    // Update progress bar
+    connect(webView, &QWebEngineView::loadProgress,
+            this, [this, webView](int progress) {
+                if (m_tabWidget->currentWidget() == webView) {
+                    m_progressBar->setValue(progress);
+                    m_progressLabel->setText(QString::number(progress) + "%");
+                }
+            });
 
-    connect(m_webView,&QWebEngineView::titleChanged,
-            this,&QMainWindow::setWindowTitle);
+    // Update status bar
+    connect(webView, &QWebEngineView::loadStarted,
+            this, [this, webView]() {
+                if (m_tabWidget->currentWidget() == webView)
+                    statusBar()->showMessage(tr("Loading..."));
+            });
+
+    connect(webView, &QWebEngineView::loadFinished,
+            this, [this, webView](bool) {
+                if (m_tabWidget->currentWidget() == webView)
+                    statusBar()->showMessage(tr("Ready"));
+            });
+}
+
+void MainWindow::onTabCloseRequested(int index)
+{
+    // Always keep at least one tab open
+    if (m_tabWidget->count() <= 1)
+        return;
+
+    QWidget *tab = m_tabWidget->widget(index);
+    m_tabWidget->removeTab(index);
+    delete tab;
+}
+
+void MainWindow::onAddressEntered()
+{
+    QWebEngineView *webView = qobject_cast<QWebEngineView*>(m_tabWidget->currentWidget());
+    if (webView)
+        webView->setUrl(QUrl::fromUserInput(m_addressBar->text()));
 }
 
 void MainWindow::setupToolBar()
@@ -82,8 +119,6 @@ void MainWindow::setupToolBar()
     m_reloadAction  = m_toolBar->addAction(style()->standardIcon(QStyle::SP_BrowserReload), tr("Reload"));
     m_homeAction    = m_toolBar->addAction(style()->standardIcon(QStyle::SP_DirHomeIcon), tr("Home"));
 
-    // No QWebEngineView yet (that's Module 3), so these can't do anything real.
-    // Disabled rather than wired to a no-op, so the UI honestly reflects state.
     m_backAction->setEnabled(true);
     m_forwardAction->setEnabled(true);
 
@@ -91,46 +126,60 @@ void MainWindow::setupToolBar()
     m_addressBar->setPlaceholderText(tr("Search or enter address"));
     m_toolBar->addWidget(m_addressBar);
 
-    // Module 3: connect m_addressBar->returnPressed() to QWebEngineView::load(QUrl)
+    // Wire Back/Forward/Reload to active tab
+    connect(m_backAction, &QAction::triggered, this, [this]() {
+        QWebEngineView *v = qobject_cast<QWebEngineView*>(m_tabWidget->currentWidget());
+        if (v) v->back();
+    });
+
+    connect(m_forwardAction, &QAction::triggered, this, [this]() {
+        QWebEngineView *v = qobject_cast<QWebEngineView*>(m_tabWidget->currentWidget());
+        if (v) v->forward();
+    });
+
+    connect(m_reloadAction, &QAction::triggered, this, [this]() {
+        QWebEngineView *v = qobject_cast<QWebEngineView*>(m_tabWidget->currentWidget());
+        if (v) v->reload();
+    });
 }
 
 void MainWindow::setupMenuBar()
 {
-    // File
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
     QAction *newTabAction = fileMenu->addAction(tr("New Tab"));
-    newTabAction->setShortcut(QKeySequence::AddTab); // Ctrl+T
+    newTabAction->setShortcut(QKeySequence::AddTab);
+    connect(newTabAction, &QAction::triggered,
+            this, [this]() { addNewTab(); });
+
     QAction *closeTabAction = fileMenu->addAction(tr("Close Tab"));
-    closeTabAction->setShortcut(QKeySequence::Close); // Ctrl+W
+    closeTabAction->setShortcut(QKeySequence::Close);
+    connect(closeTabAction, &QAction::triggered,
+            this, [this]() { onTabCloseRequested(m_tabWidget->currentIndex()); });
+
     fileMenu->addSeparator();
     QAction *quitAction = fileMenu->addAction(tr("Quit"));
     quitAction->setShortcut(QKeySequence::Quit);
     connect(quitAction, &QAction::triggered, this, &QWidget::close);
 
-    // Edit
     QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
     editMenu->addAction(tr("Cut"));
     editMenu->addAction(tr("Copy"));
     editMenu->addAction(tr("Paste"));
 
-    // View
     QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
     viewMenu->addAction(tr("Zoom In"));
     viewMenu->addAction(tr("Zoom Out"));
     viewMenu->addAction(tr("Reset Zoom"));
     viewMenu->addAction(tr("Toggle Full Screen"));
 
-    // Bookmarks
     QMenu *bookmarksMenu = menuBar()->addMenu(tr("&Bookmarks"));
     bookmarksMenu->addAction(tr("Add Bookmark"));
     bookmarksMenu->addAction(tr("Show All Bookmarks"));
 
-    // History
     QMenu *historyMenu = menuBar()->addMenu(tr("Hi&story"));
     historyMenu->addAction(tr("Show History"));
     historyMenu->addAction(tr("Clear History"));
 
-    // Help
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
     helpMenu->addAction(tr("About"));
 }
@@ -141,17 +190,12 @@ void MainWindow::setupStatusBar()
 
     m_progressBar = new QProgressBar(this);
     m_progressBar->setRange(0, 100);
-    m_progressBar->setValue(50);
+    m_progressBar->setValue(0);
     m_progressBar->setTextVisible(false);
     m_progressBar->setFixedSize(150, 14);
     statusBar()->addPermanentWidget(m_progressBar);
 
-    m_progressLabel = new QLabel(tr("50%"), this);
+    m_progressLabel = new QLabel(tr("0%"), this);
     m_progressLabel->setFixedWidth(32);
     statusBar()->addPermanentWidget(m_progressLabel);
-}
-void MainWindow::onAddressEntered()
-{
-    QUrl url = QUrl::fromUserInput(m_addressBar->text());
-    m_webView->setUrl(url);
 }
