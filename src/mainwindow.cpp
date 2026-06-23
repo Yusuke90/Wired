@@ -101,6 +101,16 @@ void MainWindow::addNewTab(const QUrl &url)
                     m_addressBar->setText(newUrl.toString());
             });
 
+    //update favicon
+    connect(webView,&QWebEngineView::iconChanged,this,
+            [this,webView](const QIcon &icon){
+                int i=m_tabWidget->indexOf(webView);
+                    if(i>=0){
+                        m_tabWidget->setTabIcon(i, icon);
+                    }
+                }
+            );
+
     // Update progress bar
     connect(webView, &QWebEngineView::loadProgress,
             this, [this, webView](int progress) {
