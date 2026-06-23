@@ -11,6 +11,7 @@
 #include <QStatusBar>
 #include <QShortcut>
 #include <QKeySequence>
+#include <QToolButton>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -26,18 +27,24 @@ MainWindow::MainWindow(QWidget *parent)
     m_tabWidget->setMovable(true);
     setCentralWidget(m_tabWidget);
 
-    // Wire tab close button
-    connect(m_tabWidget, &QTabWidget::tabCloseRequested,
-            this, &MainWindow::onTabCloseRequested);
+    QToolButton *newTabButton = new QToolButton(this);
+    newTabButton->setText("+");
+
+    connect(
+        newTabButton,
+        &QToolButton::clicked,
+        this,
+        [this]()
+        {
+            addNewTab();
+        }
+        );
+
+    m_tabWidget->setCornerWidget(newTabButton);
 
     // Wire address bar
     connect(m_addressBar, &QLineEdit::returnPressed,
             this, &MainWindow::onAddressEntered);
-
-    // Ctrl+T shortcut
-    QShortcut *newTabShortcut = new QShortcut(QKeySequence::AddTab, this);
-    connect(newTabShortcut, &QShortcut::activated,
-            this, [this]() { addNewTab(); });
 
     // Open first tab at startup
     addNewTab(QUrl("https://www.google.com"));
@@ -152,7 +159,7 @@ void MainWindow::setupMenuBar()
             this, [this]() { addNewTab(); });
 
     QAction *closeTabAction = fileMenu->addAction(tr("Close Tab"));
-    closeTabAction->setShortcut(QKeySequence::Close);
+    closeTabAction->setShortcut(QKeySequence("Ctrl+W"));
     connect(closeTabAction, &QAction::triggered,
             this, [this]() { onTabCloseRequested(m_tabWidget->currentIndex()); });
 
