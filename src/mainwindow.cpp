@@ -1,12 +1,13 @@
 #include "mainwindow.h"
 #include "custombrowserpage.h"
 #include "apitesterwidget.h"
+#include "historymanager.h"
+#include "bookmarkmanager.h"
 
 #include <QWebEngineView>
 #include <QWebEngineProfile>
 #include <QWebEnginePermission>
 #include <QWebEngineCertificateError>
-
 #include <QAction>
 #include <QApplication>
 #include <QHBoxLayout>
@@ -28,6 +29,9 @@
 #include <QSizePolicy>
 #include <QFont>
 #include <QNetworkInformation>
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QDebug>
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,6 +91,12 @@ MainWindow::MainWindow(QWidget *parent)
     vl->addWidget(m_webStack);
 
     setCentralWidget(central);
+
+    m_historyManager= new HistoryManager(this);
+    m_historyManager->initialize();
+
+    m_bookMarkManager = new BookMarkManager(this);
+    m_bookMarkManager->initialize();
 
     // Status bar
     setupStatusBar();
@@ -574,9 +584,12 @@ void MainWindow::createTab(QWebEngineProfile *profile,
                     statusBar()->showMessage(tr("Loading…"));
             });
     connect(webView, &QWebEngineView::loadFinished,
-            this, [this, webView](bool) {
+            this, [this, webView](bool ok) {
                 if (m_webStack->currentWidget() == webView)
                     statusBar()->showMessage(tr("Ready"));
+                if(ok){
+                    m_historyManager->addHistory(webView->url(),webView->title());
+                }
             });
 
     webView->setUrl(url);

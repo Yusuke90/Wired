@@ -13,6 +13,7 @@ find_package(Qt6 REQUIRED COMPONENTS
     Gui
     Widgets
     WebEngineWidgets
+    Sql
 )
 
 qt_standard_project_setup()
@@ -28,6 +29,10 @@ qt_add_executable(QtBrowser
     resources.qrc
     src/apitesterwidget.h
     src/apitesterwidget.cpp
+    src/historymanager.h
+    src/historymanager.cpp
+    src/bookmarkmanager.h
+    src/bookmarkmanager.cpp
 )
 
 target_link_libraries(QtBrowser PRIVATE
@@ -35,4 +40,5 @@ target_link_libraries(QtBrowser PRIVATE
     Qt6::Gui
     Qt6::Widgets
     Qt6::WebEngineWidgets
+    Qt6::Sql
 )

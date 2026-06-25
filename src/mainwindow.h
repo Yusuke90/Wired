@@ -14,6 +14,9 @@
 #include <QAction>
 #include <QMenu>
 #include "downloadmanager.h"
+#include "historymanager.h"
+#include "bookmarkmanager.h"
+
 
 class MainWindow : public QMainWindow
 {
@@ -64,6 +67,8 @@ private:
     QWidget         *m_notificationBar  = nullptr;
 
     DownloadManager *m_downloadManager  = nullptr;
+    HistoryManager  *m_historyManager   = nullptr;
+    BookMarkManager *m_bookMarkManager  = nullptr;
 
     QLabel *m_networkStatusLabel = nullptr;
 };
