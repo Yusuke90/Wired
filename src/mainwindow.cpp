@@ -20,19 +20,61 @@
 #include <QMessageBox>
 #include <QWebEnginePermission>
 #include <QWebEngineCertificateError>
-
+#include <QWebEngineProfile>
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     setWindowTitle(tr("Qt Browser"));
-    setupToolBar();
+        setupToolBar();
     setupMenuBar();
     setupStatusBar();
 
     // Module 4 — Tab widget replaces single web view
     m_tabWidget = new QTabWidget(this);
+
+    // ---------- Styling ----------
+
+    m_tabWidget->setStyleSheet(
+        "QTabWidget::pane { border: none; }"
+
+        "QTabBar::tab {"
+        "background:#16213e;"
+        "color:#aaa;"
+        "padding:6px 16px;"
+        "border-top-left-radius:6px;"
+        "border-top-right-radius:6px;"
+        "margin-right:2px;"
+        "}"
+
+        "QTabBar::tab:selected {"
+        "background:#0f3460;"
+        "color:white;"
+        "}"
+
+        "QTabBar::tab:hover {"
+        "background:#0f3460;"
+        "}"
+        );
+
+    statusBar()->setStyleSheet(
+        "QStatusBar {"
+        "background:#1a1a2e;"
+        "color:#aaa;"
+        "border-top:1px solid #0f3460;"
+        "}"
+        );
+
+    setStyleSheet(
+        "QMainWindow {"
+        "background:#1a1a2e;"
+        "}"
+        );
+
+    // ---------- End Styling ----------
+
     m_tabWidget->setTabsClosable(true);
     m_tabWidget->setMovable(true);
+
     setCentralWidget(m_tabWidget);
 
     connect(
@@ -42,7 +84,9 @@ MainWindow::MainWindow(QWidget *parent)
         &MainWindow::onTabCloseRequested
         );
 
-    QToolButton *newTabButton = new QToolButton(this);
+    QToolButton *newTabButton =
+        new QToolButton(this);
+
     newTabButton->setText("+");
 
     connect(
@@ -55,7 +99,9 @@ MainWindow::MainWindow(QWidget *parent)
         }
         );
 
-    m_tabWidget->setCornerWidget(newTabButton);
+    m_tabWidget->setCornerWidget(
+        newTabButton
+        );
 
     connect(
         m_tabWidget,
@@ -63,26 +109,65 @@ MainWindow::MainWindow(QWidget *parent)
         this,
         [this](int)
         {
-            QWebEngineView *view = currentWebView();
+            QWebEngineView *view =
+                currentWebView();
 
             if (!view)
                 return;
 
-            m_addressBar->setText(view->url().toString());
+            m_addressBar->setText(
+                view->url().toString()
+                );
 
-            setWindowTitle(view->title());
+            setWindowTitle(
+                view->title()
+                );
 
-            statusBar()->showMessage("Ready");
+            statusBar()->showMessage(
+                "Ready"
+                );
         }
         );
 
     // Wire address bar
-    connect(m_addressBar, &QLineEdit::returnPressed,
-            this, &MainWindow::onAddressEntered);
+    connect(
+        m_addressBar,
+        &QLineEdit::returnPressed,
+        this,
+        &MainWindow::onAddressEntered
+        );
 
-    // Open first tab at startup
-    addNewTab(QUrl("https://www.google.com"));
+    // Open first tab
+    addNewTab(
+        QUrl(
+            "https://www.google.com"
+            )
+        );
+
+    // Download manager
+    m_downloadManager =
+        new DownloadManager(
+            this
+            );
+
+    connect(
+        QWebEngineProfile::defaultProfile(),
+        &QWebEngineProfile::downloadRequested,
+        this,
+        [this]
+        (
+            QWebEngineDownloadRequest
+            *download
+            )
+        {
+            m_downloadManager
+                ->addDownload(
+                    download
+                    );
+        }
+        );
 }
+
 
 void MainWindow::createTab(QWebEngineProfile *profile,
                            const QUrl &url,
@@ -256,34 +341,122 @@ void MainWindow::setupToolBar()
 {
     m_toolBar = addToolBar(tr("Navigation"));
     m_toolBar->setMovable(false);
+    m_toolBar->setFloatable(false);
 
-    m_backAction    = m_toolBar->addAction(style()->standardIcon(QStyle::SP_ArrowBack), tr("Back"));
+    // Force toolbar to sit below menu bar by setting tool button style
+    m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+
+    m_backAction    = m_toolBar->addAction(style()->standardIcon(QStyle::SP_ArrowBack),    tr("Back"));
     m_forwardAction = m_toolBar->addAction(style()->standardIcon(QStyle::SP_ArrowForward), tr("Forward"));
-    m_reloadAction  = m_toolBar->addAction(style()->standardIcon(QStyle::SP_BrowserReload), tr("Reload"));
-    m_homeAction    = m_toolBar->addAction(style()->standardIcon(QStyle::SP_DirHomeIcon), tr("Home"));
-
-    m_backAction->setEnabled(true);
-    m_forwardAction->setEnabled(true);
+    m_reloadAction  = m_toolBar->addAction(style()->standardIcon(QStyle::SP_BrowserReload),tr("Reload"));
+    m_homeAction    = m_toolBar->addAction(style()->standardIcon(QStyle::SP_DirHomeIcon),  tr("Home"));
 
     m_addressBar = new QLineEdit(this);
     m_addressBar->setPlaceholderText(tr("Search or enter address"));
+    m_addressBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_addressBar->setMinimumWidth(350);
+    m_addressBar->setStyleSheet(
+        "QLineEdit {"
+        "  background: #16213e;"
+        "  color: white;"
+        "  border: 1px solid #0f3460;"
+        "  border-radius: 12px;"
+        "  padding: 4px 12px;"
+        "}"
+        "QLineEdit:focus {"
+        "  border-color: #e94560;"
+        "}"
+        );
     m_toolBar->addWidget(m_addressBar);
 
-    // Wire Back/Forward/Reload to active tab
-    connect(m_backAction, &QAction::triggered, this, [this]() {
-        QWebEngineView *v = currentWebView();
-        if (v) v->back();
-    });
+    m_toolBar->setStyleSheet(
+        "QToolBar {"
+        "  background: #1a1a2e;"
+        "  border-bottom: 1px solid #0f3460;"
+        "  padding: 4px;"
+        "  spacing: 4px;"
+        "}"
+        "QToolButton {"
+        "  color: white;"
+        "  background: transparent;"
+        "  border-radius: 6px;"
+        "  padding: 4px;"
+        "}"
+        "QToolButton:hover {"
+        "  background: #16213e;"
+        "}"
+        );
 
-    connect(m_forwardAction, &QAction::triggered, this, [this]() {
-        QWebEngineView *v = currentWebView();
-        if (v) v->forward();
-    });
+    connect(m_backAction,    &QAction::triggered, this, [this]() { if (auto *v = currentWebView()) v->back(); });
+    connect(m_forwardAction, &QAction::triggered, this, [this]() { if (auto *v = currentWebView()) v->forward(); });
+    connect(m_reloadAction,  &QAction::triggered, this, [this]() { if (auto *v = currentWebView()) v->reload(); });
+}
 
-    connect(m_reloadAction, &QAction::triggered, this, [this]() {
-        QWebEngineView *v = currentWebView();
-        if (v) v->reload();
-    });
+void MainWindow::setupMenuBar()
+{
+    menuBar()->setStyleSheet(
+        "QMenuBar {"
+        "  background: #1a1a2e;"
+        "  color: white;"
+        "  border-bottom: 1px solid #0f3460;"
+        "}"
+        "QMenuBar::item {"
+        "  background: transparent;"
+        "  padding: 6px 14px;"
+        "}"
+        "QMenuBar::item:selected {"
+        "  background: #16213e;"
+        "  border-radius: 4px;"
+        "}"
+        "QMenu {"
+        "  background: #16213e;"
+        "  color: white;"
+        "  border: 1px solid #0f3460;"
+        "}"
+        "QMenu::item:selected {"
+        "  background: #0f3460;"
+        "}"
+        );
+
+    QMenu *fileMenu = menuBar()->addMenu(tr("File"));
+    QAction *newTabAction = fileMenu->addAction(tr("New Tab"));
+    newTabAction->setShortcut(QKeySequence("Ctrl+T"));
+    connect(newTabAction, &QAction::triggered, this, [this]() { addNewTab(); });
+
+    QAction *incognitoAction = fileMenu->addAction(tr("New Incognito Tab"));
+    incognitoAction->setShortcut(QKeySequence("Ctrl+Shift+N"));
+    connect(incognitoAction, &QAction::triggered, this, [this]() { addNewIncognitoTab(); });
+
+    QAction *closeTabAction = fileMenu->addAction(tr("Close Tab"));
+    closeTabAction->setShortcut(QKeySequence("Ctrl+W"));
+    connect(closeTabAction, &QAction::triggered, this, [this]() { onTabCloseRequested(m_tabWidget->currentIndex()); });
+
+    fileMenu->addSeparator();
+    QAction *quitAction = fileMenu->addAction(tr("Quit"));
+    quitAction->setShortcut(QKeySequence("Ctrl+Q"));
+    connect(quitAction, &QAction::triggered, this, &QWidget::close);
+
+    QMenu *editMenu = menuBar()->addMenu(tr("Edit"));
+    editMenu->addAction(tr("Cut"));
+    editMenu->addAction(tr("Copy"));
+    editMenu->addAction(tr("Paste"));
+
+    QMenu *viewMenu = menuBar()->addMenu(tr("View"));
+    viewMenu->addAction(tr("Zoom In"));
+    viewMenu->addAction(tr("Zoom Out"));
+    viewMenu->addAction(tr("Reset Zoom"));
+    viewMenu->addAction(tr("Toggle Full Screen"));
+
+    QMenu *bookmarksMenu = menuBar()->addMenu(tr("Bookmarks"));
+    bookmarksMenu->addAction(tr("Add Bookmark"));
+    bookmarksMenu->addAction(tr("Show All Bookmarks"));
+
+    QMenu *historyMenu = menuBar()->addMenu(tr("History"));
+    historyMenu->addAction(tr("Show History"));
+    historyMenu->addAction(tr("Clear History"));
+
+    QMenu *helpMenu = menuBar()->addMenu(tr("Help"));
+    helpMenu->addAction(tr("About"));
 }
 
 QWebEngineView* MainWindow::currentWebView()
@@ -292,54 +465,6 @@ QWebEngineView* MainWindow::currentWebView()
         m_tabWidget->currentWidget()
         );
 }
-
-void MainWindow::setupMenuBar()
-{
-    QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
-    QAction *newTabAction = fileMenu->addAction(tr("New Tab"));
-    newTabAction->setShortcut(QKeySequence::AddTab);
-    connect(newTabAction, &QAction::triggered,
-            this, [this]() { addNewTab(); });
-
-    QAction *incognitoAction=fileMenu->addAction("New Incognito Tab");
-    incognitoAction->setShortcut(QKeySequence("Ctrl+Shift+N"));
-    connect(incognitoAction,&QAction::triggered,this,[this](){
-        addNewIncognitoTab();
-    });
-
-    QAction *closeTabAction = fileMenu->addAction(tr("Close Tab"));
-    closeTabAction->setShortcut(QKeySequence("Ctrl+W"));
-    connect(closeTabAction, &QAction::triggered,
-            this, [this]() { onTabCloseRequested(m_tabWidget->currentIndex()); });
-
-    fileMenu->addSeparator();
-    QAction *quitAction = fileMenu->addAction(tr("Quit"));
-    quitAction->setShortcut(QKeySequence::Quit);
-    connect(quitAction, &QAction::triggered, this, &QWidget::close);
-
-    QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
-    editMenu->addAction(tr("Cut"));
-    editMenu->addAction(tr("Copy"));
-    editMenu->addAction(tr("Paste"));
-
-    QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
-    viewMenu->addAction(tr("Zoom In"));
-    viewMenu->addAction(tr("Zoom Out"));
-    viewMenu->addAction(tr("Reset Zoom"));
-    viewMenu->addAction(tr("Toggle Full Screen"));
-
-    QMenu *bookmarksMenu = menuBar()->addMenu(tr("&Bookmarks"));
-    bookmarksMenu->addAction(tr("Add Bookmark"));
-    bookmarksMenu->addAction(tr("Show All Bookmarks"));
-
-    QMenu *historyMenu = menuBar()->addMenu(tr("Hi&story"));
-    historyMenu->addAction(tr("Show History"));
-    historyMenu->addAction(tr("Clear History"));
-
-    QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
-    helpMenu->addAction(tr("About"));
-}
-
 void MainWindow::setupStatusBar()
 {
     statusBar()->showMessage(tr("Ready"));
