@@ -36,6 +36,7 @@ qt_add_executable(QtBrowser
     src/historydialog.cpp
     src/bookmarkdialog.h
     src/bookmarkdialog.cpp
+    resources.qrc
 )
 
 target_link_libraries(QtBrowser PRIVATE

@@ -148,7 +148,7 @@ MainWindow::MainWindow(QWidget *parent)
             });
 
     // First tab
-    addNewTab(QUrl("https://www.google.com"));
+    addNewTab();
 
     QNetworkInformation::loadDefaultBackend();
 
@@ -602,11 +602,15 @@ void MainWindow::createTab(QWebEngineProfile *profile,
                     m_tabBar->setTabIcon(i, icon);
             });
 
-    // URL sync
+    // URL sync — clear address bar for internal new-tab pages
     connect(webView, &QWebEngineView::urlChanged,
             this, [this, webView](const QUrl &newUrl) {
-                if (m_webStack->currentWidget() == webView)
-                    m_addressBar->setText(newUrl.toString());
+                if (m_webStack->currentWidget() == webView) {
+                    if (newUrl.scheme() == "qrc")
+                        m_addressBar->clear();
+                    else
+                        m_addressBar->setText(newUrl.toString());
+                }
             });
 
     // Progress
@@ -665,7 +669,10 @@ void MainWindow::onCurrentTabChanged(int index)
         return;
     }
 
-    m_addressBar->setText(view->url().toString());
+    if (view->url().scheme() == "qrc")
+        m_addressBar->clear();
+    else
+        m_addressBar->setText(view->url().toString());
     setWindowTitle(view->title().isEmpty() ? tr("Qt Browser") : view->title());
     statusBar()->showMessage(tr("Ready"));
 }

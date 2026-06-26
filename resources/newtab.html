@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Tab</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+    background: #202124;
+    color: #e8eaed;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Subtle animated gradient orb behind content */
+  body::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(138,180,248,0.06) 0%, transparent 70%);
+    animation: pulse 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: translate(-50%, -55%) scale(1); opacity: 0.6; }
+    50% { transform: translate(-50%, -55%) scale(1.15); opacity: 1; }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    width: 100%;
+    max-width: 600px;
+    padding: 0 24px;
+  }
+
+  /* Time display */
+  .time {
+    font-size: 72px;
+    font-weight: 300;
+    letter-spacing: -2px;
+    color: #e8eaed;
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+
+  .date {
+    font-size: 14px;
+    font-weight: 400;
+    color: #9aa0a6;
+    margin-bottom: 40px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Search bar */
+  .search-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 48px;
+  }
+
+  .search-wrapper svg {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    fill: #9aa0a6;
+    transition: fill 0.2s ease;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 14px 20px 14px 48px;
+    background: #35363a;
+    border: 1px solid #3c4043;
+    border-radius: 24px;
+    color: #e8eaed;
+    font-size: 15px;
+    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+    outline: none;
+    transition: all 0.25s ease;
+  }
+
+  .search-input::placeholder {
+    color: #9aa0a6;
+  }
+
+  .search-input:focus {
+    background: #292a2d;
+    border-color: #8ab4f8;
+    box-shadow: 0 0 0 3px rgba(138,180,248,0.15), 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  .search-input:focus + svg,
+  .search-wrapper:hover svg {
+    fill: #8ab4f8;
+  }
+
+  /* Quick links grid */
+  .shortcuts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  .shortcut {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 8px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #e8eaed;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .shortcut:hover {
+    background: rgba(255,255,255,0.06);
+    transform: translateY(-2px);
+  }
+
+  .shortcut-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #35363a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.2s ease;
+    border: 1px solid #3c4043;
+  }
+
+  .shortcut:hover .shortcut-icon {
+    background: #3c4043;
+    border-color: #5f6368;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  .shortcut-label {
+    font-size: 12px;
+    font-weight: 400;
+    color: #9aa0a6;
+    transition: color 0.2s ease;
+  }
+
+  .shortcut:hover .shortcut-label {
+    color: #e8eaed;
+  }
+
+  /* Bottom branding */
+  .branding {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: #5f6368;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="time" id="clock">--:--</div>
+  <div class="date" id="date">---</div>
+
+  <div class="search-wrapper">
+    <input
+      type="text"
+      class="search-input"
+      id="searchInput"
+      placeholder="Search Google or type a URL"
+      autofocus
+    />
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+    </svg>
+  </div>
+
+  <div class="shortcuts">
+    <a class="shortcut" href="https://www.youtube.com">
+      <div class="shortcut-icon">▶</div>
+      <span class="shortcut-label">YouTube</span>
+    </a>
+    <a class="shortcut" href="https://github.com">
+      <div class="shortcut-icon">⌥</div>
+      <span class="shortcut-label">GitHub</span>
+    </a>
+    <a class="shortcut" href="https://mail.google.com">
+      <div class="shortcut-icon">✉</div>
+      <span class="shortcut-label">Gmail</span>
+    </a>
+    <a class="shortcut" href="https://www.google.com/maps">
+      <div class="shortcut-icon">📍</div>
+      <span class="shortcut-label">Maps</span>
+    </a>
+  </div>
+</div>
+
+<div class="branding">Qt Browser</div>
+
+<script>
+  function updateClock() {
+    const now = new Date();
+    const h = now.getHours().toString().padStart(2, '0');
+    const m = now.getMinutes().toString().padStart(2, '0');
+    document.getElementById('clock').textContent = h + ':' + m;
+
+    const options = { weekday: 'long', month: 'long', day: 'numeric' };
+    document.getElementById('date').textContent = now.toLocaleDateString('en-US', options);
+  }
+
+  updateClock();
+  setInterval(updateClock, 10000);
+
+  // Search functionality
+  document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      const q = this.value.trim();
+      if (!q) return;
+
+      // If it looks like a URL, navigate directly
+      if (q.startsWith('http://') || q.startsWith('https://') ||
+          (q.includes('.') && !q.includes(' '))) {
+        window.location.href = q.startsWith('http') ? q : 'https://' + q;
+      } else {
+        // Search Google
+        window.location.href = 'https://www.google.com/search?q=' + encodeURIComponent(q);
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

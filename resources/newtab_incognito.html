@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incognito</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Subtle purple orb */
+  body::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -60%);
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(150,120,220,0.08) 0%, transparent 70%);
+    animation: pulse 8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: translate(-50%, -60%) scale(1); opacity: 0.5; }
+    50% { transform: translate(-50%, -60%) scale(1.2); opacity: 1; }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    width: 100%;
+    max-width: 560px;
+    padding: 0 24px;
+  }
+
+  /* Incognito icon */
+  .incognito-icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+    filter: grayscale(20%);
+    animation: float 4s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .title {
+    font-size: 28px;
+    font-weight: 300;
+    color: #c9b8e8;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    font-weight: 400;
+    color: #8a8a9e;
+    line-height: 1.7;
+    margin-bottom: 36px;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Search bar */
+  .search-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 40px;
+  }
+
+  .search-wrapper svg {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    fill: #8a8a9e;
+    transition: fill 0.2s ease;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 14px 20px 14px 48px;
+    background: #2a2a40;
+    border: 1px solid #3d3d5c;
+    border-radius: 24px;
+    color: #e0e0e0;
+    font-size: 15px;
+    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+    outline: none;
+    transition: all 0.25s ease;
+  }
+
+  .search-input::placeholder {
+    color: #6a6a8e;
+  }
+
+  .search-input:focus {
+    background: #232340;
+    border-color: #9678dc;
+    box-shadow: 0 0 0 3px rgba(150,120,220,0.15), 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .search-input:focus + svg {
+    fill: #9678dc;
+  }
+
+  /* Info cards */
+  .info-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .info-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 16px 12px;
+    text-align: center;
+    transition: all 0.2s ease;
+  }
+
+  .info-card:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(150,120,220,0.2);
+    transform: translateY(-1px);
+  }
+
+  .info-icon {
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  .info-text {
+    font-size: 11px;
+    color: #8a8a9e;
+    line-height: 1.5;
+  }
+
+  /* Bottom branding */
+  .branding {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: #3d3d5c;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="incognito-icon">🕶</div>
+  <div class="title">You've gone incognito</div>
+  <div class="subtitle">
+    Your browsing history, cookies, and site data won't be saved on this device.
+    Your activity might still be visible to your ISP.
+  </div>
+
+  <div class="search-wrapper">
+    <input
+      type="text"
+      class="search-input"
+      id="searchInput"
+      placeholder="Search Google or type a URL"
+      autofocus
+    />
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+    </svg>
+  </div>
+
+  <div class="info-cards">
+    <div class="info-card">
+      <div class="info-icon">🚫</div>
+      <div class="info-text">No browsing history saved</div>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">🍪</div>
+      <div class="info-text">Cookies cleared on close</div>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">🔒</div>
+      <div class="info-text">Local data stays private</div>
+    </div>
+  </div>
+</div>
+
+<div class="branding">Qt Browser · Incognito</div>
+
+<script>
+  document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      const q = this.value.trim();
+      if (!q) return;
+
+      if (q.startsWith('http://') || q.startsWith('https://') ||
+          (q.includes('.') && !q.includes(' '))) {
+        window.location.href = q.startsWith('http') ? q : 'https://' + q;
+      } else {
+        window.location.href = 'https://www.google.com/search?q=' + encodeURIComponent(q);
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

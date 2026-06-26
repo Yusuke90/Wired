@@ -28,8 +28,8 @@ public:
     ~MainWindow() override = default;
 
 public slots:
-    void addNewTab(const QUrl &url = QUrl("https://www.google.com"));
-    void addNewIncognitoTab(const QUrl &url = QUrl("https://www.google.com"));
+    void addNewTab(const QUrl &url = QUrl("qrc:///resources/newtab.html"));
+    void addNewIncognitoTab(const QUrl &url = QUrl("qrc:///resources/newtab_incognito.html"));
 
 private slots:
     void onAddressEntered();
