@@ -34,6 +34,10 @@
 #include <QDebug>
 #include <QCompleter>
 #include <QStringListModel>
+#include <QWebEngineFindTextResult>
+#include <QInputDialog>
+#include <QWebEngineFullScreenRequest>
+#include <QWebEngineSettings>
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Chrome dark-mode palette (exact values from chrome://settings)
@@ -126,6 +130,8 @@ MainWindow::MainWindow(bool incognitoWindow,QWidget *parent)
     auto *scReload = new QShortcut(QKeySequence("F5"),           this);
     auto *scNewWindow = new QShortcut(QKeySequence("Ctrl+N"),    this);
     auto *scNewIncognitoWindow = new QShortcut(QKeySequence("Ctrl+I"),this);
+    auto *scFind   = new QShortcut(QKeySequence("Ctrl+F"),        this);
+
     connect(scNewTab, &QShortcut::activated, this, [this]() { addNewTab(); });
     connect(scClose,  &QShortcut::activated, this, [this]() {
         onTabCloseRequested(m_tabBar->currentIndex());
@@ -149,6 +155,28 @@ MainWindow::MainWindow(bool incognitoWindow,QWidget *parent)
             {
                 addNewIncognitoWindow();
             });
+
+    connect(scFind,&QShortcut::activated,this,
+            [this]()
+            {
+                if(!currentWebView())
+                {
+                   return;
+                }
+
+                QString text = QInputDialog::getText(
+                    this,
+                    "Find In Page",
+                    "Find:"
+                    );
+
+                if(!text.isEmpty())
+                {
+                    currentWebView()->page()->findText(text);
+                }
+
+            });
+
     // Address bar
     connect(m_addressBar, &QLineEdit::returnPressed,
             this, &MainWindow::onAddressEntered);
@@ -160,6 +188,10 @@ MainWindow::MainWindow(bool incognitoWindow,QWidget *parent)
             this, [this](QWebEngineDownloadRequest *dl) {
                 m_downloadManager->addDownload(dl);
             });
+
+    QWebEngineProfile *profile = QWebEngineProfile::defaultProfile();
+    profile->setHttpCacheType(QWebEngineProfile::DiskHttpCache);
+    profile->setHttpCacheMaximumSize(100*1024*1024);
 
     // First tab
     if (incognitoWindow)
@@ -204,6 +236,33 @@ MainWindow::MainWindow(bool incognitoWindow,QWidget *parent)
 
         updateStatus();
     }
+
+    m_suspendTimer = new QTimer(this);
+    m_suspendTimer->start(300000);
+
+    connect(
+        m_suspendTimer,
+        &QTimer::timeout,
+        this,
+        [this]()
+        {
+            for (int i = 0; i < m_webStack->count(); i++)
+            {
+                if (i == m_tabBar->currentIndex())
+                    continue;
+
+                auto *view =
+                    qobject_cast<QWebEngineView*>(
+                        m_webStack->widget(i));
+
+                if (!view)
+                    continue;
+
+                // Suspend rendering
+                view->setUpdatesEnabled(false);
+            }
+        });
+
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -505,8 +564,15 @@ void MainWindow::buildHamburgerMenu(QMenu *menu)
 
     menu->addSeparator();
 
+    QAction *theme = menu->addAction(tr("Toggle Theme"));
+    connect(theme,
+            &QAction::triggered,
+            this,
+            &MainWindow::toggleTheme);
+
     QAction *quit = menu->addAction(tr("Quit                       Ctrl+Q"));
     connect(quit, &QAction::triggered, this, &QWidget::close);
+
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -566,6 +632,8 @@ void MainWindow::createTab(QWebEngineProfile *profile,
     QWebEngineView    *webView = new QWebEngineView(this);
     CustomBrowserPage *page    = new CustomBrowserPage(profile, webView);
 
+    page->settings()->setAttribute(QWebEngineSettings::FullScreenSupportEnabled,true);
+
     // Certificate errors
     connect(page, &QWebEnginePage::certificateError, this,
             [this](QWebEngineCertificateError error) {
@@ -606,6 +674,36 @@ void MainWindow::createTab(QWebEngineProfile *profile,
             this, &MainWindow::onPopupBlocked);
 
     webView->setPage(page);
+
+    connect(
+        page,
+        &QWebEnginePage::fullScreenRequested,
+        this,
+        [this](QWebEngineFullScreenRequest request)
+        {
+            request.accept();
+
+            if (request.toggleOn())
+            {
+                menuBar()->hide();
+                statusBar()->hide();
+
+                m_tabBar->hide();
+                m_navWidget->hide();
+
+                showFullScreen();
+            }
+            else
+            {
+                showNormal();
+
+                m_tabBar->show();
+                m_navWidget->show();
+
+                statusBar()->show();
+            }
+        }
+        );
 
     // Add to stack & tab bar (indices stay in sync)
     int stackIdx = m_webStack->addWidget(webView);
@@ -708,6 +806,18 @@ void MainWindow::onCurrentTabChanged(int index)
 {
     if (index < 0 || index >= m_webStack->count()) return;
     m_webStack->setCurrentIndex(index);
+
+    for (int i = 0; i < m_webStack->count(); i++)
+    {
+        auto *view =
+            qobject_cast<QWebEngineView*>(
+                m_webStack->widget(i));
+
+        if (!view)
+            continue;
+
+        view->setUpdatesEnabled(i == index);
+    }
 
     QWebEngineView *view = currentWebView();
     if (!view){
@@ -823,4 +933,21 @@ void MainWindow::addApiTesterTab()
     int tabIndex = m_tabBar->addTab("REST API");
 
     m_tabBar->setCurrentIndex(tabIndex);   // onCurrentTabChanged() updates m_webStack
+}
+
+void MainWindow::toggleTheme()
+{
+    if (m_darkTheme)
+    {
+        qApp->setStyleSheet("");
+    }
+    else
+    {
+        setStyleSheet(
+            QString("QMainWindow { background: %1; }")
+                .arg(kFrame)
+            );
+    }
+
+    m_darkTheme = !m_darkTheme;
 }
