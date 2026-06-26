@@ -16,8 +16,9 @@
 #include "downloadmanager.h"
 #include "historymanager.h"
 #include "bookmarkmanager.h"
-
-
+#include "historydialog.h"
+#include "bookmarkdialog.h"
+#include <QCompleter>
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -67,8 +68,9 @@ private:
     QWidget         *m_notificationBar  = nullptr;
 
     DownloadManager *m_downloadManager  = nullptr;
-    HistoryManager  *m_historyManager   = nullptr;
+    HistoryManager *m_historyManager = nullptr;
     BookMarkManager *m_bookMarkManager  = nullptr;
+    QCompleter *m_completer = nullptr;
 
     QLabel *m_networkStatusLabel = nullptr;
 };

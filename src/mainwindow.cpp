@@ -3,7 +3,7 @@
 #include "apitesterwidget.h"
 #include "historymanager.h"
 #include "bookmarkmanager.h"
-
+#include "bookmarkdialog.h"
 #include <QWebEngineView>
 #include <QWebEngineProfile>
 #include <QWebEnginePermission>
@@ -32,7 +32,8 @@
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QDebug>
-
+#include <QCompleter>
+#include <QStringListModel>
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Chrome dark-mode palette (exact values from chrome://settings)
@@ -94,6 +95,22 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_historyManager= new HistoryManager(this);
     m_historyManager->initialize();
+    // Address bar autocomplete from history
+    QCompleter *completer = new QCompleter(this);
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
+    completer->setFilterMode(Qt::MatchContains);
+    m_addressBar->setCompleter(completer);
+
+    // Update completer model when address bar is focused
+    connect(m_addressBar, &QLineEdit::textEdited,
+            this, [this, completer](const QString &text) {
+                if (text.length() < 2) return;
+                const auto entries = m_historyManager->searchHistory(text);
+                QStringList urls;
+                for (const auto &e : entries)
+                    urls << e.url;
+                completer->setModel(new QStringListModel(urls, completer));
+            });
 
     m_bookMarkManager = new BookMarkManager(this);
     m_bookMarkManager->initialize();
@@ -435,6 +452,30 @@ void MainWindow::buildHamburgerMenu(QMenu *menu)
 
     menu->addSeparator();
 
+    QAction *history = menu->addAction(tr("History                  Ctrl+H"));
+    connect(history, &QAction::triggered, this, [this]() {
+        HistoryDialog *dialog = new HistoryDialog(m_historyManager, this);
+        connect(dialog, &HistoryDialog::urlSelected,
+                this, [this](const QUrl &url) { addNewTab(url); });
+        dialog->exec();
+    });
+
+    QAction *bookmarks = menu->addAction(tr("Bookmarks"));
+    connect(bookmarks, &QAction::triggered, this, [this]() {
+        BookmarkDialog *dialog = new BookmarkDialog(m_bookMarkManager, this);
+        connect(dialog, &BookmarkDialog::urlSelected,
+                this, [this](const QUrl &url) { addNewTab(url); });
+        dialog->exec();
+    });
+
+    QAction *addBookmark = menu->addAction(tr("Bookmark This Page"));
+    connect(addBookmark, &QAction::triggered, this, [this]() {
+        if (auto *v = currentWebView())
+            m_bookMarkManager->addBookMark(v->url(), v->title());
+    });
+
+    menu->addSeparator();
+
     QAction *quit = menu->addAction(tr("Quit                       Ctrl+Q"));
     connect(quit, &QAction::triggered, this, &QWidget::close);
 }
@@ -583,16 +624,9 @@ void MainWindow::createTab(QWebEngineProfile *profile,
                 if (m_webStack->currentWidget() == webView)
                     statusBar()->showMessage(tr("Loading…"));
             });
-    connect(webView, &QWebEngineView::loadFinished,
-            this, [this, webView](bool ok) {
-                if (m_webStack->currentWidget() == webView)
-                    statusBar()->showMessage(tr("Ready"));
-                if(ok){
-                    m_historyManager->addHistory(webView->url(),webView->title());
-                }
-            });
 
     webView->setUrl(url);
+
 }
 
 void MainWindow::addNewTab(const QUrl &url)
@@ -638,8 +672,26 @@ void MainWindow::onCurrentTabChanged(int index)
 
 void MainWindow::onAddressEntered()
 {
+    QString input = m_addressBar->text().trimmed();
+    if (input.isEmpty()) return;
+
+    QUrl url;
+
+    // Detect if it's a URL or a search term
+    if (input.startsWith("http://") || input.startsWith("https://") ||
+        input.startsWith("qrc://") || (input.contains(".") && !input.contains(" ")))
+    {
+        url = QUrl::fromUserInput(input);
+    }
+    else
+    {
+        // Treat as search query
+        url = QUrl("https://www.google.com/search?q=" +
+                   QUrl::toPercentEncoding(input));
+    }
+
     if (auto *v = currentWebView())
-        v->setUrl(QUrl::fromUserInput(m_addressBar->text()));
+        v->setUrl(url);
 }
 
 QWebEngineView* MainWindow::currentWebView()

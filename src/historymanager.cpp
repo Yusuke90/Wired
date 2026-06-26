@@ -52,8 +52,8 @@ void HistoryManager::addHistory(const QUrl &url,const QString &title)
     QSqlQuery query;
 
     query.prepare(
-        "INSERT INTO HISTORY"
-        "(url,title,visited_at)"
+        "INSERT INTO HISTORY "
+        "(url, title, visited_at) "
         "VALUES (?, ?, ?)"
         );
 
@@ -68,7 +68,7 @@ void HistoryManager::addHistory(const QUrl &url,const QString &title)
 
 }
 
-QVector<HistoryEntry> allHistory()
+QVector<HistoryEntry> HistoryManager::allHistory()
 {
     QSqlQuery query;
 
@@ -102,7 +102,7 @@ QVector<HistoryEntry> allHistory()
     return history;
 }
 
-QVector<HistoryEntry> searchHistory(QString text)
+QVector<HistoryEntry> HistoryManager::searchHistory(const QString &text)
 {
     QSqlQuery query;
 
@@ -140,7 +140,7 @@ QVector<HistoryEntry> searchHistory(QString text)
     return history;
 }
 
-void clearHistory()
+void HistoryManager::clearHistory()
 {
     QSqlQuery query;
 

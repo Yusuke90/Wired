@@ -28,7 +28,7 @@ public:
 
     QVector<HistoryEntry> allHistory();
 
-    QVector<HistoryEntry> searchHistory();
+    QVector<HistoryEntry> searchHistory(const QString &text);
 
 private:
     QSqlDatabase m_database;
