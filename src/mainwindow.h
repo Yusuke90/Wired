@@ -12,6 +12,7 @@
 #include <QToolButton>
 #include <QWebEngineProfile>
 #include <QAction>
+#include <QTimer>
 #include <QMenu>
 #include "downloadmanager.h"
 #include "historymanager.h"
@@ -38,6 +39,7 @@ private slots:
     void onTabCloseRequested(int index);
     void onCurrentTabChanged(int index);
     void onPopupBlocked(const QUrl &url);
+    void toggleTheme();
 
 private:
     void createTab(QWebEngineProfile *profile,
@@ -75,4 +77,7 @@ private:
     QCompleter *m_completer = nullptr;
 
     QLabel *m_networkStatusLabel = nullptr;
+
+    QTimer *m_suspendTimer = nullptr;
+    bool    m_darkTheme    = true;
 };
