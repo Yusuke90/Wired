@@ -759,6 +759,22 @@ void MainWindow::createTab(QWebEngineProfile *profile,
 
     webView->setUrl(url);
 
+    connect(
+        webView,
+        &QWebEngineView::loadFinished,
+        this,
+        [this, webView](bool ok)
+        {
+            if (!ok)
+                return;
+
+            m_historyManager->addHistory(
+                webView->url(),
+                webView->title()
+                );
+        }
+        );
+
 }
 
 void MainWindow::addNewTab(const QUrl &url)
